@@ -27,5 +27,11 @@ jobs:
       - name: Decode Firebase key
         run: echo "$FIREBASE_KEY" | base64 --decode > firebase_key.json
 
+      - name: Debug key file
+        run: |
+          ls -lh firebase_key.json
+          head -n 20 firebase_key.json
+
+
       - name: Run retraining script
         run: python train_model.py  # 🔁 adjust if your file is in ml_model/
