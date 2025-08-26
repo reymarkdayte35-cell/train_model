@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "gasleakdetector-4cbd7",
+  "private_key_id": "c2423e708777ef502581e68d8ba64d9174dccd5b",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCd2Mu0zchVhS43\nS0s5r2ov8p4LcraAXcfqZy8lYwaPQXiEKxkoJGhAyVuepiyMMosiCMiVteydhGdi\nrK1CsrqMomtw/lhepyqh8Frs29CC/ahH4dg/eccfC5OZdLmqvpygk99XifQ31rVM\nF0FiWt32yGLH1dgc7bq4p8P0tmmoEZJRlySNh+tfHqzeaQucRjXKZg0n+Ma4lZhW\nwNp39KfKamD7DXcOEH77PO53FWdug8NqoUPbRY6z4K4kUH0N8YvZfkAC7clpTnNW\nfRRDoZuJfzWuShUM5Iosbsv3y+RL2aD+m66OlYlu0iDsDIu6AmrddVTp2+mZWjzc\nuy4mrqknAgMBAAECggEAGBIZbmb7J995XsFCpXdUkB9FbqV9ozGp7NrzW5YwR+RK\nBo2z9mUm6MpMCHN6055ZjUUdoYbuoE6ynV+LxGIRBKU4ETEYNMb1P2Cx3PDgaTlZ\nUizklzlw3hEb3wjnz1vl8q7aHjVRYrqBRys8s0z8EEgamDLKFA9ErCgZP9YZYqGd\n20JzrhIAIhH/fWp7JKTPLIu3UoK6ZJQCJbsZXNffcRtsSIZfI3+yEPKUZBAmYS+E\nFH4E4VJ0tOvjL0neVHFh9LBs7qcG/e4G45dj2LFj9yORzpCfduaOSW/DuVW4VVqH\n04uCs1U/EGpOgV9L31FjJAwtB71QorWjcvIzYEd8MQKBgQDZBQBTJoed9EbsCgfT\nQmR80eprkg6uLlpf21miJwr21vPvEMOe7Rg1lCflh5pmHAaOCUjRrh17aWpv9M9M\nrn4cGAmUa83JN33i4B2zprN4VUf5xx3F9J09i7pahU6ZB8BRvQt3zTIPxuOEnwCm\nisQbFFwwlPir0b0soPt0wFD8cwKBgQC6MuoldWe7aG58PyU28GYbgP10CSGOPBgb\n5ueTgh0rudtvtq6syniUY1NmUAldMipI5iIOFqHMgYULvpCroEPiW2TzvzBAAOob\ngyxQk16flCGxXyT7cn7Nk2IwJq6jQL8qHKSY8XHCJ/lLUDpUZAewHSJV+fG64nOP\n/OXU5gLHfQKBgDyudlHJwz/6bt5PS7LZrKluNMMRWwN/OIv3FJAPpLQylJCzOk+0\n8gEBRUqb6SNGENskY3Ul316DslxNsq05WU/XtM4IeskZuBx5GDUElsg96FtCPuP8\nKv9rk5b+EWUe0rrIRm2gNbBNp46MuyzWPlFoFwMKlKHOirvw437Yy4xbAoGBALAo\niVOFHu20IItV5mxyxfeRcri8Bs4dVqXXMBJjUBvVS6EGUX3SVH/29KlgYWuVkWHE\nsEVp7gugIfJ5iT+GcZMO6pScthZnhxUeZeeZdTU+nR3FKSTnLsZpgMSTZDe5guJh\nlOvJydlpnjY9oeHDfW6GMbzrqmIn6jM4jWx9a/W1AoGAEwif//b5WIorjbZoxeS+\n8aI3qbM6C8WLRiuLW7pWIGNWM6oSheXPRjgLG18WW6JBHaOeROQnhfW+rheYYl+m\nM7K1SGLrGLCq/HReV13zAEtpyuUySz34sw1kYsbP7hXljwAWZikWePOQsjxYH0Nm\nzoNuSeQRBdgaDhVsCPvoWhg=\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-n4ej2@gasleakdetector-4cbd7.iam.gserviceaccount.com",
+  "client_id": "102447385994258279449",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-n4ej2%40gasleakdetector-4cbd7.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
