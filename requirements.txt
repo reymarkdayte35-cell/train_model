@@ -1,0 +1,12 @@
+Flask
+firebase-admin
+pandas
+joblib
+scikit-learn
+pytz
+gunicorn
+flask-cors
+tensorflow
+protobuf==3.20.3
+
+
