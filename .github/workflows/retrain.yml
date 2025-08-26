@@ -24,5 +24,8 @@ jobs:
           pip install -r requirements.txt
           pip list  # check if tensorflow is listed
 
+      - name: Setup Firebase key
+        run: echo "$FIREBASE_KEY" > firebase_key.json
+
       - name: Run retraining script
         run: python train_model.py  # 🔁 adjust if your file is in ml_model/
