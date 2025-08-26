@@ -26,7 +26,7 @@ jobs:
 
       - name: Set up Firebase credentials
         run: |
-          echo "${{ secrets.FIREBASE_KEY }}" > firebase_key.json
+          printf "${{ secrets.FIREBASE_KEY }}" > firebase_key.json
 
       - name: Run retraining script
         run: python train_model.py  # 🔁 adjust if your file is in ml_model/
