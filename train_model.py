@@ -1,3 +1,5 @@
+import os
+import json
 import firebase_admin
 from firebase_admin import credentials, firestore
 import tensorflow as tf
@@ -6,33 +8,47 @@ import numpy as np
 from datetime import datetime
 import pytz
 
+# =========================================
+# ✅ SECURE FIREBASE INITIALIZATION
+# =========================================
+firebase_key_json = os.environ.get("FIREBASE_KEY")
 
-# ✅ Initialize Firebase
-cred = credentials.Certificate("firebase_key.json")
+if not firebase_key_json:
+    raise ValueError("❌ FIREBASE_KEY environment variable not set. Please configure it in Render or GitHub Secrets.")
+
+firebase_key = json.loads(firebase_key_json)
+
+cred = credentials.Certificate(firebase_key)
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-# ✅ Load trained model
+# =========================================
+# ✅ LOAD TRAINED MODEL
+# =========================================
 model = tf.keras.models.load_model("yield_model.keras")
 
-# ✅ Get current Philippine time
+# =========================================
+# ✅ GET CURRENT PHILIPPINE TIME
+# =========================================
 ph_tz = pytz.timezone("Asia/Manila")
 now = datetime.now(ph_tz)
 formatted_date = now.strftime("%m/%d/%Y")
-formatted_year = now.strftime("yy")         # e.g. 07/23/2025
-formatted_month = now.strftime("%Y-%m")            # e.g. 2025-07
+formatted_year = now.strftime("%Y")
+formatted_month = now.strftime("%Y-%m")
 formatted_train_time = now.strftime("%Y-%m-%d %I:%M %p")
-formatted_time_only = now.strftime("%I:%M %p")  # e.g., 02:14 PM
+formatted_time_only = now.strftime("%I:%M %p")
 
-
-# ✅ Fetch only today’s data
+# =========================================
+# ✅ FETCH ONLY TODAY’S DATA
+# =========================================
 docs = (
     db.collection("dataCollectionSensor")
     .where("date", "==", formatted_date)
     .order_by("timestamp", direction=firestore.Query.DESCENDING)
     .stream()
 )
-trained_at = datetime.now(pytz.timezone("Asia/Manila")).strftime("%Y-%m-%d %I:%M %p")
+
+trained_at = datetime.now(ph_tz).strftime("%Y-%m-%d %I:%M %p")
 
 db.collection("trainingLogs").add({
     "trained_at": trained_at,
@@ -41,6 +57,7 @@ db.collection("trainingLogs").add({
 
 unlabeled_data = []
 docs_to_update = []
+
 for doc in docs:
     record = doc.to_dict()
 
@@ -56,17 +73,23 @@ if not unlabeled_data:
     print("No new sensor data to predict.")
     exit()
 
-# ✅ Scale and predict
+# =========================================
+# ✅ SCALE & PREDICT
+# =========================================
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(unlabeled_data)
 predicted_yields = model.predict(X_scaled).flatten()
 
-# ✅ Determine max index so far for today
+# =========================================
+# ✅ DETERMINE MAX INDEX SO FAR FOR TODAY
+# =========================================
 existing = db.collection("predictedYield").where("date", "==", formatted_date).stream()
 existing_indices = [int(doc.to_dict().get("index", 0)) for doc in existing]
 index_counter = max(existing_indices, default=-1) + 1
 
-# ✅ Save predictions and accumulate total
+# =========================================
+# ✅ SAVE PREDICTIONS & ACCUMULATE TOTAL
+# =========================================
 total_day_yield = 0
 
 for i, (doc_id, original) in enumerate(docs_to_update):
@@ -95,31 +118,34 @@ for i, (doc_id, original) in enumerate(docs_to_update):
 
     index_counter += 1
 
-
-# ✅ Save to DailyReading (📘 NEW)
+# =========================================
+# ✅ SAVE TO DAILY READING
+# =========================================
 db.collection("DailyReading").add({
     "date": formatted_date,
     "total_yield": round(total_day_yield, 2),
     "trained_at": formatted_train_time
 })
 
-timestamp_str = record.get("timestamp")  # e.g., "2025-08-05 14:30:00"
+# =========================================
+# ✅ UPDATE MONTHLY SUMMARY
+# =========================================
+timestamp_str = record.get("timestamp")
+year = None
+
 if timestamp_str:
     try:
         year = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S").year
-        print("Year:", year)
     except ValueError:
-        print("Invalid timestamp format")
+        print("⚠️ Invalid timestamp format")
 
-# Convert formatted_month to a proper datetime (1st of month)
-first_of_month = formatted_month 
+first_of_month = formatted_month
 
 try:
-    # Query for existing doc with this month
     monthly_docs = db.collection("monthlyYieldSummary").where("month", "==", first_of_month).get()
 
     if monthly_docs:
-        print(f"update this month") 
+        print("🔄 Updating monthly total...")
         monthly_doc = monthly_docs[0]
         doc_ref = monthly_doc.reference
         prev_total = monthly_doc.to_dict().get("total_yield", 0)
@@ -129,26 +155,24 @@ try:
             "total_yield": round(new_total, 2),
             "past_updated": formatted_train_time,
             "formatTimeUpdate": formatted_time_only,
-            "year": year
+            "year": year or int(formatted_year)
         })
     else:
-        print(f"Create new month")
-        new_total = total_day_yield
+        print("🆕 Creating new month summary...")
         db.collection("monthlyYieldSummary").add({
             "month": first_of_month,
-            "total_yield": round(new_total, 2),
+            "total_yield": round(total_day_yield, 2),
             "past_updated": formatted_train_time,
             "formatTimeUpdate": formatted_time_only,
-            "year": year
+            "year": year or int(formatted_year)
         })
 
 except Exception as e:
     print(f"⚠️ Failed to update monthly total: {e}")
-    new_total = total_day_yield  # Ensure it's defined for printing
 
-
-
-# ✅ Final logs
+# =========================================
+# ✅ FINAL LOGS
+# =========================================
 print(f"✅ {len(predicted_yields)} predictions saved.")
 print(f"📊 Total predicted yield for {formatted_date}: {round(total_day_yield, 2)}")
-print(f"📆 Monthly yield summary for {formatted_month}: {round(new_total, 2)}")
+print(f"📆 Monthly yield summary for {formatted_month} updated successfully.")
