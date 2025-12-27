@@ -11,7 +11,12 @@ import pytz
 # =========================================
 # ✅ SECURE FIREBASE INITIALIZATION
 # =========================================
-firebase_key_json = os.environ.get("FIREBASE_KEY")
+firebase_key = json.loads(os.environ["FIREBASE_KEY"])
+
+cred = credentials.Certificate(firebase_key)
+firebase_admin.initialize_app(cred)
+
+db = firestore.client()
 
 if not firebase_key_json:
     raise ValueError("❌ FIREBASE_KEY environment variable not set. Please configure it in Render or GitHub Secrets.")
