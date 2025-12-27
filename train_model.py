@@ -7,6 +7,7 @@ from sklearn.preprocessing import StandardScaler
 import numpy as np
 from datetime import datetime
 import pytz
+from firebase_admin import credentials, firestore
 
 # =========================================
 # ✅ SECURE FIREBASE INITIALIZATION (GITHUB ACTIONS)
