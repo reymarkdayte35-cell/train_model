@@ -35,7 +35,7 @@ ph_tz = pytz.timezone("Asia/Manila")
 now = datetime.now(ph_tz)
 
 # ISO format date/time for Firestore Timestamp compatibility
-today_iso = now.date().isoformat()  # YYYY-MM-DD
+today_iso = now.strftime("%m-%d-%Y")
 formatted_train_time = now.strftime("%Y-%m-%d %I:%M %p")
 formatted_time_only = now.strftime("%I:%M %p")
 formatted_year = str(now.year)
