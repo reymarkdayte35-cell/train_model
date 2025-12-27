@@ -18,7 +18,7 @@ firebase_admin.initialize_app(cred)
 
 db = firestore.client()
 
-if not firebase_key_json:
+if not firebase_key:
     raise ValueError("❌ FIREBASE_KEY environment variable not set. Please configure it in Render or GitHub Secrets.")
 
 firebase_key = json.loads(firebase_key)
