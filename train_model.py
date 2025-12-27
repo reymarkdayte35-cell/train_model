@@ -9,23 +9,18 @@ from datetime import datetime
 import pytz
 
 # =========================================
-# ✅ SECURE FIREBASE INITIALIZATION
+# ✅ SECURE FIREBASE INITIALIZATION (GITHUB ACTIONS)
 # =========================================
-firebase_key = json.loads(os.environ["FIREBASE_KEY"])
+if "FIREBASE_KEY" not in os.environ:
+    raise ValueError("❌ FIREBASE_KEY environment variable not set in GitHub Secrets")
+
+firebase_key = json.loads(os.environ["FIREBASE_KEY"])  # only ONCE
 
 cred = credentials.Certificate(firebase_key)
 firebase_admin.initialize_app(cred)
 
 db = firestore.client()
-
-if not firebase_key:
-    raise ValueError("❌ FIREBASE_KEY environment variable not set. Please configure it in Render or GitHub Secrets.")
-
-firebase_key = json.loads(firebase_key)
-
-cred = credentials.Certificate(firebase_key)
-firebase_admin.initialize_app(cred)
-db = firestore.client()
+client()
 
 # =========================================
 # ✅ LOAD TRAINED MODEL
