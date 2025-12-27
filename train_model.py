@@ -37,7 +37,7 @@ model = tf.keras.models.load_model("yield_model.keras")
 # =========================================
 ph_tz = pytz.timezone("Asia/Manila")
 now = datetime.now(ph_tz)
-formatted_date = now.strftime("%m/%d/%Y")
+formatted_date = now.strftime("%m-%d-%Y")
 formatted_year = now.strftime("%Y")
 formatted_month = now.strftime("%Y-%m")
 formatted_train_time = now.strftime("%Y-%m-%d %I:%M %p")
