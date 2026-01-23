@@ -8,8 +8,13 @@ import pytz
 # =====================================================
 # 🔐 FIREBASE INIT
 # =====================================================
-cred = credentials.Certificate("CalamansiFirebaseKey.json")  # <-- your key file
-firebase_admin.initialize_app(cred)
+if not firebase_admin._apps:
+    if "FIREBASE_KEY" in os.environ:
+        cred = credentials.Certificate(json.loads(os.environ["FIREBASE_KEY"]))
+    else:
+        cred = credentials.Certificate("CalamansiFirebaseKey.json")
+    firebase_admin.initialize_app(cred)
+
 db = firestore.client()
 
 # =====================================================
@@ -87,3 +92,4 @@ else:
     print("❌ No farms scheduled for harvest today")
 
 print("===================================")
+
