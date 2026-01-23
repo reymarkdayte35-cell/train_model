@@ -1,4 +1,4 @@
-import os
+    import os
 import json
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -39,7 +39,7 @@ FARM_COLLECTION = "Farm_information"
 SENSOR_COLLECTION = "dataCollectionSensor"
 PREDICTED_COLLECTION = "predictedYield"
 
-FARM_HARVEST_FIELD = "harvestDate"
+FARM_HARVEST_FIELD = "estimatedHarvest"
 FARM_FLOWERING_FIELD = "floweringDate"
 
 # =====================================================
