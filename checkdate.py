@@ -5,59 +5,44 @@ from firebase_admin import credentials, firestore
 from datetime import datetime
 import pytz
 
-import pytz
-# =========================================
-# ✅ SECURE FIREBASE INITIALIZATION (GITHUB ACTIONS)
-# =========================================
-if "FIREBASE_KEY" not in os.environ:
-    raise ValueError("❌ FIREBASE_KEY environment variable not set in GitHub Secrets")
-
-# Load JSON from environment variable (string → dict)
-firebase_key = json.loads(os.environ["FIREBASE_KEY"])
-
-# Initialize Firebase app
-cred = credentials.Certificate(firebase_key)
+# =====================================================
+# 🔐 FIREBASE INIT
+# =====================================================
+cred = credentials.Certificate("CalamansiFirebaseKey.json")  # <-- your key file
 firebase_admin.initialize_app(cred)
-
 db = firestore.client()
 
-# ---------------------------------------
+# =====================================================
 # ⚙️ CONFIG
-# ---------------------------------------
+# =====================================================
+MONTHLY_COLLECTION = "monthlyYieldSummary"
 FARM_COLLECTION = "Farm_information"
-HISTORY_COLLECTION = "farm_history"
 
-DATE_FIELD = "estimatedHarvest"     # Farm_information
-HISTORY_DATE_FIELD = "harvestDate"  # farm_history
+HARVEST_FIELD_FARM = "estimatedHarvest"  # field in Farm_information
+HARVEST_FIELD_MONTHLY = "estimatedHarvest"    # field in monthlyYieldSummary
 
 PH_TZ = pytz.timezone("Asia/Manila")
 
-# ---------------------------------------
-# 📅 TODAY FORMATTED LIKE FIRESTORE
-# ---------------------------------------
+# =====================================================
+# 📅 TODAY FORMATTED LIKE Firestore
+# =====================================================
 now = datetime.now(PH_TZ)
-
-# Example: "Jan. 18, 2026"
 today_formatted = now.strftime("%b. %d, %Y").replace(" 0", " ")
-today_formatted1 = now.strftime("%B %d, %Y").replace(" 0", " ")
-print(today_formatted)
+print(f"📅 Today formatted: {today_formatted}\n")
 
-print(today_formatted1)
-print(f"\n📅 Today formatted: {today_formatted}\n")
-
-# ---------------------------------------
-# 🔍 CHECK Farm_information
-# ---------------------------------------
+# =====================================================
+# 🔍 CHECK Farm_information FOR TODAY HARVEST
+# =====================================================
 matches = []
 
 docs = db.collection(FARM_COLLECTION).stream()
 
 for doc in docs:
     data = doc.to_dict()
-    harvest_date = data.get(DATE_FIELD)
+    harvest_date = data.get(HARVEST_FIELD_FARM)
 
     if not harvest_date:
-        print(f"⚠️ {doc.id} → No {DATE_FIELD}")
+        print(f"⚠️ {doc.id} → No {HARVEST_FIELD_FARM}")
         continue
 
     print(f"📄 Doc: {doc.id}")
@@ -69,43 +54,36 @@ for doc in docs:
     else:
         print("   ❌ Not today\n")
 
-# ---------------------------------------
-# 🗑️ DELETE FROM farm_history
-# ---------------------------------------
+# =====================================================
+# 🗑️ DELETE FROM monthlyYieldSummary IF HARVEST MATCHES
+# =====================================================
 deleted_count = 0
 
 if matches:
-    print("🗑️ Deleting matching records from farm_history...\n")
+    print("🗑️ Deleting matching records from monthlyYieldSummary...\n")
 
-    history_docs = (
-        db.collection(HISTORY_COLLECTION)
-        .where(HISTORY_DATE_FIELD, "==", today_formatted)
-        .stream()
-    )
-    
-    history_docs = (
-        db.collection(HISTORY_COLLECTION)
-        .where(HISTORY_DATE_FIELD, "==", today_formatted1)
-        .stream()
-    )
+    # Fetch all monthly summaries for the month/year
+    monthly_docs = db.collection(MONTHLY_COLLECTION).stream()
 
-    for hdoc in history_docs:
-        print(f"🧹 Deleting farm_history doc → {hdoc.id}")
-        hdoc.reference.delete()
-        deleted_count += 1
+    for mdoc in monthly_docs:
+        mdata = mdoc.to_dict()
+        monthly_harvest = mdata.get(HARVEST_FIELD_MONTHLY)
+        if monthly_harvest and monthly_harvest.strip() == today_formatted:
+            print(f"🧹 Deleting monthlyYieldSummary doc → {mdoc.id}")
+            mdoc.reference.delete()
+            deleted_count += 1
 
-# ---------------------------------------
+# =====================================================
 # ✅ SUMMARY
-# ---------------------------------------
+# =====================================================
 print("\n===================================")
 if matches:
-    print("🌱 FARMS WITH HARVEST TODAY:")
+    print("🌱 FARMS WITH HARVEST TODAY (from Farm_information):")
     for doc_id in matches:
         print(f" • {doc_id}")
 
-    print(f"\n🗑️ TOTAL farm_history RECORDS DELETED: {deleted_count}")
+    print(f"\n🗑️ TOTAL monthlyYieldSummary RECORDS DELETED: {deleted_count}")
 else:
     print("❌ No farms scheduled for harvest today")
 
 print("===================================")
-
