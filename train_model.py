@@ -9,39 +9,22 @@ from datetime import datetime
 import pytz
 
 # =====================================================
-# ✅ FIREBASE INITIALIZATION (LOCAL or GITHUB ACTIONS)
+# 🔐 FIREBASE INIT (LOCAL OR GITHUB ACTIONS)
 # =====================================================
-if "FIREBASE_KEY" in os.environ:
-    firebase_key = json.loads(os.environ["FIREBASE_KEY"])
-    cred = credentials.Certificate(firebase_key)
-else:
-    cred = credentials.Certificate("CalamansiFirebaseKey.json")
+if not firebase_admin._apps:
+    if "FIREBASE_KEY" in os.environ:
+        cred = credentials.Certificate(json.loads(os.environ["FIREBASE_KEY"]))
+    else:
+        cred = credentials.Certificate("CalamansiFirebaseKey.json")
+    firebase_admin.initialize_app(cred)
 
-firebase_admin.initialize_app(cred)
 db = firestore.client()
 
 # =====================================================
-# ✅ CONFIG
+# ⏰ TIME & FORMAT
 # =====================================================
-FARM_COLLECTION = "Farm_information"
-SENSOR_COLLECTION = "dataCollectionSensor"
-PREDICTED_COLLECTION = "predictedYield"
-
-# Farm fields
-FARM_HARVEST_FIELD = "harvestDate"
-FARM_FLOWERING_FIELD = "floweringDate"
-
-PH_TZ = pytz.timezone("Asia/Manila")
-
-# =====================================================
-# ✅ LOAD MODEL
-# =====================================================
-model = tf.keras.models.load_model("yield_model.keras")
-
-# =====================================================
-# ✅ CURRENT TIME (PH)
-# =====================================================
-now = datetime.now(PH_TZ)
+tz = pytz.timezone("Asia/Manila")
+now = datetime.now(tz)
 
 today_iso = now.strftime("%m-%d-%Y")
 formatted_train_time = now.strftime("%Y-%m-%d %I:%M %p")
@@ -50,24 +33,25 @@ formatted_year = str(now.year)
 formatted_month = now.strftime("%Y-%m")  # YYYY-MM
 
 # =====================================================
-# ✅ FETCH TODAY SENSOR DATA
+# CONFIG
 # =====================================================
-docs = (
-    db.collection(SENSOR_COLLECTION)
-    .where("date", "==", today_iso)
-    .order_by("timestamp", direction=firestore.Query.DESCENDING)
-    .stream()
-)
+FARM_COLLECTION = "Farm_information"
+SENSOR_COLLECTION = "dataCollectionSensor"
+PREDICTED_COLLECTION = "predictedYield"
 
-# Log training run
-db.collection("trainingLogs").add({
-    "trained_at": formatted_train_time,
-    "note": "Auto-retrain schedule"
-})
+FARM_HARVEST_FIELD = "harvestDate"
+FARM_FLOWERING_FIELD = "floweringDate"
 
 # =====================================================
-# ✅ PREPARE DATA
+# LOAD MODEL
 # =====================================================
+model = tf.keras.models.load_model("yield_model.keras")
+
+# =====================================================
+# FETCH SENSOR DATA
+# =====================================================
+docs = db.collection(SENSOR_COLLECTION).where("date", "==", today_iso).stream()
+
 unlabeled_data = []
 docs_to_update = []
 
@@ -89,16 +73,15 @@ if not unlabeled_data:
     raise SystemExit(0)
 
 # =====================================================
-# ✅ SCALE & PREDICT
+# SCALE & PREDICT
 # =====================================================
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(np.array(unlabeled_data))
 predicted_yields = model.predict(X_scaled).flatten()
-
 total_day_yield = float(np.sum(predicted_yields))
 
 # =====================================================
-# ✅ INDEX COUNTER
+# INDEX COUNTER
 # =====================================================
 existing = db.collection(PREDICTED_COLLECTION).where("date", "==", today_iso).stream()
 indices = []
@@ -112,10 +95,10 @@ for d in existing:
 index_counter = max(indices, default=-1) + 1
 
 # =====================================================
-# ✅ SAVE PER-READING PREDICTIONS
+# SAVE PER-READING PREDICTIONS
 # =====================================================
 for i, (doc_id, original) in enumerate(docs_to_update):
-    ts = datetime.now(PH_TZ)
+    ts = datetime.now(tz)
     predicted = float(predicted_yields[i])
 
     db.collection(PREDICTED_COLLECTION).add({
@@ -142,7 +125,7 @@ for i, (doc_id, original) in enumerate(docs_to_update):
     })
 
 # =====================================================
-# ✅ DAILY READING
+# DAILY READING
 # =====================================================
 db.collection("DailyReading").add({
     "date": today_iso,
@@ -151,22 +134,20 @@ db.collection("DailyReading").add({
 })
 
 # =====================================================
-# ✅ FETCH FARM HARVEST & FLOWERING DATES
+# FETCH FARM HARVEST & FLOWERING DATES
 # =====================================================
 harvest_dates = set()
 flowering_dates = set()
 
 for fdoc in db.collection(FARM_COLLECTION).stream():
     fdata = fdoc.to_dict()
-
     if FARM_HARVEST_FIELD in fdata and fdata[FARM_HARVEST_FIELD]:
         harvest_dates.add(str(fdata[FARM_HARVEST_FIELD]))
-
     if FARM_FLOWERING_FIELD in fdata and fdata[FARM_FLOWERING_FIELD]:
         flowering_dates.add(str(fdata[FARM_FLOWERING_FIELD]))
 
 # =====================================================
-# ✅ UPDATE MONTHLY YIELD SUMMARY
+# UPDATE MONTHLY YIELD SUMMARY
 # =====================================================
 monthly_ref = db.collection("monthlyYieldSummary")
 monthly_docs = monthly_ref.where("month", "==", formatted_month).limit(1).get()
@@ -177,15 +158,12 @@ monthly_payload = {
     "total_yield": str(round(total_day_yield, 2)),
     "past_updated": formatted_train_time,
     "formatTimeUpdate": formatted_time_only,
+    "harvestDates": sorted(harvest_dates) if harvest_dates else [],
+    "floweringDates": sorted(flowering_dates) if flowering_dates else []
 }
 
-if harvest_dates:
-    monthly_payload["harvestDates"] = sorted(harvest_dates)
-
-if flowering_dates:
-    monthly_payload["floweringDates"] = sorted(flowering_dates)
-
 if monthly_docs:
+    # Merge with existing monthly summary
     doc_ref = monthly_docs[0].reference
     prev_total = float(monthly_docs[0].to_dict().get("total_yield", 0))
     monthly_payload["total_yield"] = str(round(prev_total + total_day_yield, 2))
@@ -194,7 +172,7 @@ else:
     monthly_ref.add(monthly_payload)
 
 # =====================================================
-# ✅ FORECAST (BASED ON DAILY HISTORY)
+# FORECAST
 # =====================================================
 daily_docs = db.collection("DailyReading") \
     .order_by("date", direction=firestore.Query.DESCENDING) \
@@ -216,17 +194,20 @@ forecast_payload = {
     "predicted_1month": str(round(avg_daily * 30, 2)),
     "predicted_2months": str(round(avg_daily * 60, 2)),
     "predicted_3months": str(round(avg_daily * 90, 2)),
-    "forecast_generated_on": datetime.now(PH_TZ),
+    "forecast_generated_on": datetime.now(tz),
     "calculated_at": formatted_train_time
 }
 
-monthly_ref.where("month", "==", formatted_month).limit(1).get()[0].reference.set(
-    forecast_payload, merge=True
-)
+# Merge forecast into monthly summary
+monthly_docs = monthly_ref.where("month", "==", formatted_month).limit(1).get()
+if monthly_docs:
+    monthly_docs[0].reference.set(forecast_payload, merge=True)
 
 # =====================================================
-# ✅ FINAL LOGS
+# FINAL LOGS
 # =====================================================
 print(f"✅ Predictions saved: {len(predicted_yields)}")
 print(f"📊 Today Yield ({today_iso}): {round(total_day_yield, 2)}")
 print(f"📆 Monthly Summary Updated: {formatted_month}")
+print(f"🌾 Harvest Dates: {sorted(harvest_dates)}")
+print(f"🌸 Flowering Dates: {sorted(flowering_dates)}")
