@@ -39,8 +39,8 @@ FARM_COLLECTION = "Farm_information"
 SENSOR_COLLECTION = "dataCollectionSensor"
 PREDICTED_COLLECTION = "predictedYield"
 
-FARM_HARVEST_FIELD = "estimatedHarvest"
-FARM_FLOWERING_FIELD = "floweringDate"
+FARM_HARVEST_FIELD = "estimatedHarvest"  # string field in Farm_information
+FARM_FLOWERING_FIELD = "floweringDate"  # string field in Farm_information
 
 # =====================================================
 # LOAD MODEL
@@ -134,24 +134,20 @@ db.collection("DailyReading").add({
 })
 
 # =====================================================
-# FETCH FARM HARVEST & FLOWERING DATES (AS STRINGS)
+# FETCH FARM HARVEST & FLOWERING DATES (STRING ONLY)
 # =====================================================
-harvest_dates = []
-flowering_dates = []
+harvest_date_str = ""
+flowering_date_str = ""
 
 for fdoc in db.collection(FARM_COLLECTION).stream():
     fdata = fdoc.to_dict()
     if FARM_HARVEST_FIELD in fdata and fdata[FARM_HARVEST_FIELD]:
-        harvest_dates.append(str(fdata[FARM_HARVEST_FIELD]))
+        harvest_date_str = str(fdata[FARM_HARVEST_FIELD])
     if FARM_FLOWERING_FIELD in fdata and fdata[FARM_FLOWERING_FIELD]:
-        flowering_dates.append(str(fdata[FARM_FLOWERING_FIELD]))
-
-# Join them into comma-separated strings
-harvest_dates_str = ", ".join(sorted(harvest_dates)) if harvest_dates else ""
-flowering_dates_str = ", ".join(sorted(flowering_dates)) if flowering_dates else ""
+        flowering_date_str = str(fdata[FARM_FLOWERING_FIELD])
 
 # =====================================================
-# UPDATE MONTHLY YIELD SUMMARY
+# UPDATE MONTHLY YIELD SUMMARY (STRING FIELDS ONLY)
 # =====================================================
 monthly_ref = db.collection("monthlyYieldSummary")
 monthly_docs = monthly_ref.where("month", "==", formatted_month).limit(1).get()
@@ -162,8 +158,11 @@ monthly_payload = {
     "total_yield": str(round(total_day_yield, 2)),
     "past_updated": formatted_train_time,
     "formatTimeUpdate": formatted_time_only,
-    "harvestDate": harvest_dates_str,
-    "floweringDate": flowering_dates_str
+    "harvestDate": harvest_date_str,
+    "floweringDate": flowering_date_str,
+    # DELETE OLD ARRAY FIELDS if they exist
+    "harvestDates": firestore.DELETE_FIELD,
+    "floweringDates": firestore.DELETE_FIELD
 }
 
 if monthly_docs:
@@ -212,5 +211,5 @@ if monthly_docs:
 print(f"✅ Predictions saved: {len(predicted_yields)}")
 print(f"📊 Today Yield ({today_iso}): {round(total_day_yield, 2)}")
 print(f"📆 Monthly Summary Updated: {formatted_month}")
-print(f"🌾 Harvest Dates: {harvest_dates_str}")
-print(f"🌸 Flowering Dates: {flowering_dates_str}")
+print(f"🌾 Harvest Date: {harvest_date_str}")
+print(f"🌸 Flowering Date: {flowering_date_str}")
