@@ -5,10 +5,22 @@ from firebase_admin import credentials, firestore
 from datetime import datetime
 import pytz
 
-cred = credentials.Certificate("CalamansiFirebaseKey.json")  # <-- your key file
+import pytz
+# =========================================
+# ✅ SECURE FIREBASE INITIALIZATION (GITHUB ACTIONS)
+# =========================================
+if "FIREBASE_KEY" not in os.environ:
+    raise ValueError("❌ FIREBASE_KEY environment variable not set in GitHub Secrets")
+
+# Load JSON from environment variable (string → dict)
+firebase_key = json.loads(os.environ["FIREBASE_KEY"])
+
+# Initialize Firebase app
+cred = credentials.Certificate(firebase_key)
 firebase_admin.initialize_app(cred)
 
 db = firestore.client()
+
 # ---------------------------------------
 # ⚙️ CONFIG
 # ---------------------------------------
@@ -96,3 +108,4 @@ else:
     print("❌ No farms scheduled for harvest today")
 
 print("===================================")
+
