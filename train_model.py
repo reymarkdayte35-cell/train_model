@@ -134,17 +134,21 @@ db.collection("DailyReading").add({
 })
 
 # =====================================================
-# FETCH FARM HARVEST & FLOWERING DATES
+# FETCH FARM HARVEST & FLOWERING DATES (AS STRINGS)
 # =====================================================
-harvest_dates = set()
-flowering_dates = set()
+harvest_dates = []
+flowering_dates = []
 
 for fdoc in db.collection(FARM_COLLECTION).stream():
     fdata = fdoc.to_dict()
     if FARM_HARVEST_FIELD in fdata and fdata[FARM_HARVEST_FIELD]:
-        harvest_dates.add(str(fdata[FARM_HARVEST_FIELD]))
+        harvest_dates.append(str(fdata[FARM_HARVEST_FIELD]))
     if FARM_FLOWERING_FIELD in fdata and fdata[FARM_FLOWERING_FIELD]:
-        flowering_dates.add(str(fdata[FARM_FLOWERING_FIELD]))
+        flowering_dates.append(str(fdata[FARM_FLOWERING_FIELD]))
+
+# Join them into comma-separated strings
+harvest_dates_str = ", ".join(sorted(harvest_dates)) if harvest_dates else ""
+flowering_dates_str = ", ".join(sorted(flowering_dates)) if flowering_dates else ""
 
 # =====================================================
 # UPDATE MONTHLY YIELD SUMMARY
@@ -158,12 +162,11 @@ monthly_payload = {
     "total_yield": str(round(total_day_yield, 2)),
     "past_updated": formatted_train_time,
     "formatTimeUpdate": formatted_time_only,
-    "harvestDates": sorted(harvest_dates) if harvest_dates else [],
-    "floweringDates": sorted(flowering_dates) if flowering_dates else []
+    "harvestDate": harvest_dates_str,
+    "floweringDate": flowering_dates_str
 }
 
 if monthly_docs:
-    # Merge with existing monthly summary
     doc_ref = monthly_docs[0].reference
     prev_total = float(monthly_docs[0].to_dict().get("total_yield", 0))
     monthly_payload["total_yield"] = str(round(prev_total + total_day_yield, 2))
@@ -209,5 +212,5 @@ if monthly_docs:
 print(f"✅ Predictions saved: {len(predicted_yields)}")
 print(f"📊 Today Yield ({today_iso}): {round(total_day_yield, 2)}")
 print(f"📆 Monthly Summary Updated: {formatted_month}")
-print(f"🌾 Harvest Dates: {sorted(harvest_dates)}")
-print(f"🌸 Flowering Dates: {sorted(flowering_dates)}")
+print(f"🌾 Harvest Dates: {harvest_dates_str}")
+print(f"🌸 Flowering Dates: {flowering_dates_str}")
