@@ -24,7 +24,7 @@ MONTHLY_COLLECTION = "monthlyYieldSummary"
 FARM_COLLECTION = "Farm_information"
 
 HARVEST_FIELD_FARM = "estimatedHarvest"  # field in Farm_information
-HARVEST_FIELD_MONTHLY = "estimatedHarvest"    # field in monthlyYieldSummary
+HARVEST_FIELD_MONTHLY = "harvestDate"    # field in monthlyYieldSummary
 
 PH_TZ = pytz.timezone("Asia/Manila")
 
@@ -92,6 +92,7 @@ else:
     print("❌ No farms scheduled for harvest today")
 
 print("===================================")
+
 
 
 
