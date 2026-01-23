@@ -72,8 +72,8 @@ if matches:
 
     for mdoc in monthly_docs:
         mdata = mdoc.to_dict()
-        estimatedHarvest = mdata.get(HARVEST_FIELD_MONTHLY)
-        if estimatedHarvest and estimatedHarvest.strip() == today_formatted:
+          monthly_harvest = mdata.get(HARVEST_FIELD_MONTHLY)
+        if monthly_harvest and monthly_harvest.strip() == today_formatted:
             print(f"🧹 Deleting monthlyYieldSummary doc → {mdoc.id}")
             mdoc.reference.delete()
             deleted_count += 1
@@ -92,5 +92,6 @@ else:
     print("❌ No farms scheduled for harvest today")
 
 print("===================================")
+
 
 
