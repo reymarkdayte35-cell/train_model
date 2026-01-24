@@ -147,11 +147,12 @@ for fdoc in db.collection(FARM_COLLECTION).stream():
         flowering_date_str = str(fdata[FARM_FLOWERING_FIELD])
 
 # =====================================================
-# UPDATE MONTHLY YIELD SUMMARY (STRING FIELDS ONLY)
+# UPDATE MONTHLY YIELD SUMMARY (SAFE VERSION)
 # =====================================================
 monthly_ref = db.collection("monthlyYieldSummary")
 monthly_docs = monthly_ref.where("month", "==", formatted_month).limit(1).get()
 
+# ✅ Base payload (SAFE for create)
 monthly_payload = {
     "month": formatted_month,
     "year": formatted_year,
@@ -159,19 +160,26 @@ monthly_payload = {
     "past_updated": formatted_train_time,
     "formatTimeUpdate": formatted_time_only,
     "harvestDate": harvest_date_str,
-    "floweringDate": flowering_date_str,
-    # DELETE OLD ARRAY FIELDS if they exist
-    "harvestDates": firestore.DELETE_FIELD,
-    "floweringDates": firestore.DELETE_FIELD
+    "floweringDate": flowering_date_str
 }
 
 if monthly_docs:
     doc_ref = monthly_docs[0].reference
     prev_total = float(monthly_docs[0].to_dict().get("total_yield", 0))
-    monthly_payload["total_yield"] = str(round(prev_total + total_day_yield, 2))
+
+    # ✅ DELETE_FIELD ONLY ON UPDATE
+    monthly_payload.update({
+        "total_yield": str(round(prev_total + total_day_yield, 2)),
+        "harvestDates": firestore.DELETE_FIELD,
+        "floweringDates": firestore.DELETE_FIELD
+    })
+
     doc_ref.set(monthly_payload, merge=True)
+
 else:
+    # 🚫 NO DELETE_FIELD ON CREATE
     monthly_ref.add(monthly_payload)
+
 
 # =====================================================
 # FORECAST
