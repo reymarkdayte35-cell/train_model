@@ -23,78 +23,93 @@ db = firestore.client()
 MONTHLY_COLLECTION = "monthlyYieldSummary"
 FARM_COLLECTION = "Farm_information"
 
-HARVEST_FIELD_FARM = "estimatedHarvest"  # field in Farm_information
-HARVEST_FIELD_MONTHLY = "harvestDate"    # field in monthlyYieldSummary
+HARVEST_FIELD_FARM = "estimatedHarvest"
+HARVEST_FIELD_MONTHLY = "harvestDate"
 
 PH_TZ = pytz.timezone("Asia/Manila")
 
 # =====================================================
-# 📅 TODAY FORMATTED LIKE Firestore
+# 📅 DATE HELPERS
+# =====================================================
+def parse_date(date_str):
+    """Convert 'Jan. 24, 2026' → date object"""
+    try:
+        return datetime.strptime(date_str.strip(), "%b. %d, %Y").date()
+    except Exception:
+        return None
+
+# =====================================================
+# 📅 TODAY
 # =====================================================
 now = datetime.now(PH_TZ)
+today_date = now.date()
 today_formatted = now.strftime("%b. %d, %Y").replace(" 0", " ")
-print(f"📅 Today formatted: {today_formatted}\n")
+
+print(f"📅 Today (formatted): {today_formatted}")
+print(f"📅 Today (date obj): {today_date}\n")
 
 # =====================================================
 # 🔍 CHECK Farm_information FOR TODAY HARVEST
 # =====================================================
 matches = []
 
-docs = db.collection(FARM_COLLECTION).stream()
-
-for doc in docs:
+for doc in db.collection(FARM_COLLECTION).stream():
     data = doc.to_dict()
-    harvest_date = data.get(HARVEST_FIELD_FARM)
+    harvest_str = data.get(HARVEST_FIELD_FARM)
 
-    if not harvest_date:
+    if not harvest_str:
         print(f"⚠️ {doc.id} → No {HARVEST_FIELD_FARM}")
         continue
 
-    print(f"📄 Doc: {doc.id}")
-    print(f"   🔹 Stored estimatedHarvest: {harvest_date}")
+    harvest_date = parse_date(harvest_str)
 
-    if harvest_date.strip() == today_formatted:
+    print(f"📄 Farm Doc: {doc.id}")
+    print(f"   🔹 estimatedHarvest: {harvest_str}")
+
+    if harvest_date == today_date:
         print("   ✅ MATCHES TODAY — HARVEST DAY!\n")
         matches.append(doc.id)
     else:
         print("   ❌ Not today\n")
 
 # =====================================================
-# 🗑️ DELETE FROM monthlyYieldSummary IF HARVEST MATCHES
+# 🗑️ DELETE FROM monthlyYieldSummary
 # =====================================================
 deleted_count = 0
 
 if matches:
-    print("🗑️ Deleting matching records from monthlyYieldSummary...\n")
+    print("🗑️ Checking monthlyYieldSummary...\n")
 
-    # Fetch all monthly summaries for the month/year
-    monthly_docs = db.collection(MONTHLY_COLLECTION).stream()
-    
-    for mdoc in monthly_docs:
+    for mdoc in db.collection(MONTHLY_COLLECTION).stream():
         mdata = mdoc.to_dict()
-        monthly_harvest = mdata.get(HARVEST_FIELD_MONTHLY)
-    
-        if monthly_harvest and monthly_harvest.strip() == today_formatted:
-            print(f"🧹 Deleting monthlyYieldSummary doc → {mdoc.id}")
+        monthly_str = mdata.get(HARVEST_FIELD_MONTHLY)
+
+        if not monthly_str:
+            continue
+
+        monthly_date = parse_date(monthly_str)
+
+        print(f"📦 Monthly Doc: {mdoc.id}")
+        print(f"   🔹 harvestDate: {monthly_str}")
+
+        if monthly_date == today_date:
+            print(f"   🧹 DELETING {mdoc.id}\n")
             mdoc.reference.delete()
             deleted_count += 1
+        else:
+            print("   ❌ Not today\n")
 
 # =====================================================
 # ✅ SUMMARY
 # =====================================================
 print("\n===================================")
 if matches:
-    print("🌱 FARMS WITH HARVEST TODAY (from Farm_information):")
+    print("🌱 FARMS WITH HARVEST TODAY:")
     for doc_id in matches:
         print(f" • {doc_id}")
 
-    print(f"\n🗑️ TOTAL monthlyYieldSummary RECORDS DELETED: {deleted_count}")
+    print(f"\n🗑️ TOTAL monthlyYieldSummary DELETED: {deleted_count}")
 else:
     print("❌ No farms scheduled for harvest today")
 
 print("===================================")
-
-
-
-
-
